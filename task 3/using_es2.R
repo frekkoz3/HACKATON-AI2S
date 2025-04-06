@@ -1,35 +1,45 @@
+library(foreach)
+library(doParallel)
+
+#setup parallel backend to use many processors
+cores=detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
+
 capacity = read.csv("../data/02_input_capacity.csv", stringsAsFactors = T)
 input_target = read.csv("../data/02_input_target.csv", stringsAsFactors = T)
-arc_costs = read.csv("../data/02_03_input_shipmentsCost_example.csv", stringsAsFactors = T)
+arc_costs = read.csv("../data/02_03_input_shipmentsCost.csv", stringsAsFactors = T)
 
 #capacity$Monthly.Capacity = capacity$Monthly.Capacity * 5
 #write.csv(capacity, "../data/02_input_capacity.csv", row.names = T)
 
-# Create empty transport data frame
-transport = data.frame(
-  Origin = character(),
-  Destination = character(),
-  Product = character(),
-  Month = character(),
-  Quantity = integer()
-)
-
-# Create empty production data frame
-production = data.frame(
-  Country = character(),
-  Product = character(),
-  Month = character(),
-  Quantity = integer()
-)
-
-totalMonthlyProdutionSum = 0
-
 # Sort arcs by cost
-arc_costs = arc_costs[order(arc_costs$Unit.Cost),]
+arc_costs = arc_costs[order(arc_costs$Unit.Cost),] 
 
-for (month in levels(input_target$Month)) {
+# Shuffle the arc costs
+#arc_costs = arc_costs[sample(nrow(arc_costs)),]
+
+parlist <- foreach(month = levels(input_target$Month)) %dopar% {
   monthly_request = input_target[input_target$Month == month,]
   
+  # Create empty transport data frame
+  transport = data.frame(
+    Origin = character(),
+    Destination = character(),
+    Product = character(),
+    Month = character(),
+    Quantity = integer()
+  )
+  
+  # Create empty production data frame
+  production = data.frame(
+    Country = character(),
+    Product = character(),
+    Month = character(),
+    Quantity = integer()
+  )
+  
+  # all states start producing all they can
   states_request = data.frame(
     Country = levels(input_target$Country),
     Quantity = sapply(
@@ -83,7 +93,7 @@ for (month in levels(input_target$Month)) {
   
   # Lower total production if globally we are overproducting
   states_request$Production = states_request$Capacity - sapply(states_request$Remaining, FUN = function(x) max(x, 0))
-  totalMonthlyProdutionSum = sum(states_request$Production) + totalMonthlyProdutionSum
+  #totalMonthlyProdutionSum = sum(states_request$Production) + totalMonthlyProdutionSum
   
   # Fill the production data frame by splitting states_request$Production by product
   for (i in 1:nrow(states_request)) {
@@ -177,12 +187,15 @@ for (month in levels(input_target$Month)) {
     }
   }
   
-  print(sum(monthly_request$Quantity))
+  list(
+    transport = transport,
+    production = production
+  )
 }
 
-print(totalMonthlyProdutionSum)
-print(sum(production$Quantity))
-print(sum(input_target$Quantity))
+# Combine the results from all months
+transport = do.call(rbind, lapply(parlist, function(x) x$transport))
+production = do.call(rbind, lapply(parlist, function(x) x$production))
 
 write.csv(production, "03_output_productionPlan_1522.csv", row.names = T)
 write.csv(transport, "03_output_shipments_1522.csv", row.names = T)
