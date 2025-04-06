@@ -1,25 +1,11 @@
-<<<<<<< HEAD
-Country,Monthly Capacity
-Australia,105000
-Brazil,90000
-Egypt,90000
-France,30000
-India,90000
-Italy,85000
-Japan,45000000
-Russia,105000
-South Africa,75000
-United Kingdom,55000
-=======
-"","Country","Monthly Capacity"
-"1","Australia",105000
-"2","Brazil",90000
-"3","Egypt",90000
-"4","France",30000
-"5","India",90000
-"6","Italy",85000
-"7","Japan",45000
-"8","Russia",105000
-"9","South Africa",75000
-"10","United Kingdom",55000
->>>>>>> 18a4203fbaebc05a0a557162a15216af28272b68
+"Country","Monthly Capacity"
+"Australia",105000
+"Brazil",90000
+"Egypt",90000
+"France",30000
+"India",90000
+"Italy",85000
+"Japan",45000
+"Russia",105000
+"South Africa",75000
+"United Kingdom",55000
